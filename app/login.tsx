@@ -47,7 +47,7 @@ export default function LoginScreen() {
         });
       }
 
-      router.replace("/home");
+      router.replace("/navigation/home");
     } catch (error: any) {
       Alert.alert("Error", error.message);
     }

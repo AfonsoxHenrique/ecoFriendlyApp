@@ -2,7 +2,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { db } from "../firebase";
+import { db } from "../../firebase";
 
 type Product = {
   id: string;
@@ -14,7 +14,7 @@ type Product = {
 export default function HomeScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [activeTab, setActiveTab] = useState("home");
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -83,15 +83,6 @@ export default function HomeScreen() {
             </View>
           )}
         />
-
-        {/* Bottom Navigation */}
-        <View style={styles.navbar}>
-          <Text>🏠</Text>
-          <Text>🛒</Text>
-          <Text>❤️</Text>
-          <Text>🍃</Text>
-          <Text>⚙️</Text>
-        </View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -108,5 +99,8 @@ const styles = StyleSheet.create({
   image: { width: 80, height: 80, marginBottom: 5 },
   name: { fontWeight: "bold" },
   price: { color: "green" },
-  navbar: { flexDirection: "row", justifyContent: "space-around", padding: 15, backgroundColor: "#e0e0e0" },
+  navbar: { flexDirection: "row", justifyContent: "space-around", paddingVertical: 10, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#ddd",},
+  navItem: { alignItems: "center", },
+  navText: { fontSize: 12, color: "gray", },
+  activeText: { color: "black", fontWeight: "bold", },
 });
