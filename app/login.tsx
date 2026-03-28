@@ -1,10 +1,57 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+import { auth, db } from "../firebase";
+
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "firebase/auth";
+
+import { doc, setDoc } from "firebase/firestore";
 
 export default function LoginScreen() {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleAuth = async () => {
+    try {
+      if (!email || !password) {
+        Alert.alert("Error", "Please fill all fields");
+        return;
+      }
+
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: email,
+          name: "",
+          created_at: new Date()
+        });
+      }
+
+      router.replace("/home");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
 
   return (
     <SafeAreaProvider>
@@ -12,23 +59,31 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
 
-          {/* Email */}
-          <TextInput placeholder="Email" style={styles.input} />
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            placeholder="Enter your email"
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-          {/* Password */}
-          <TextInput placeholder="Password" secureTextEntry style={styles.input} />
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            placeholder="Enter your password"
+            secureTextEntry
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+          />
 
-          {/* Confirm Password (Sign Up only) */}
-          {!isLogin && (
-            <TextInput placeholder="Confirm Password" secureTextEntry style={styles.input} />
-          )}
-
-          {/* Login/CreateAcc Button */}
-          <TouchableOpacity style={styles.button} onPress={() => router.replace("/home")}>
-            <Text style={styles.buttonText}>{isLogin ? "Login" : "Create Account"}</Text>
+          <TouchableOpacity style={styles.button} onPress={handleAuth}>
+            <Text style={styles.buttonText}>
+              {isLogin ? "Login" : "Create Account"}
+            </Text>
           </TouchableOpacity>
 
-          {/* Signup/Login */}
           <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
             <Text style={styles.toggleText}>
               {isLogin
@@ -62,11 +117,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 5,
+    color: "#333",
+  },
   input: {
     backgroundColor: "#eee",
     padding: 12,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   button: {
     backgroundColor: "black",
