@@ -1,40 +1,57 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Logo from "../assets/images/icon.png";
 
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
-export default function LoginScreen() {
+export default function SignUpScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleSignUp = async () => {
+    if (!name || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        name,
+        email,
+        created_at: new Date(),
+      });
+
+      Alert.alert("Success", "Account created successfully!");
       router.replace("/navigation/home");
     } catch (error: any) {
       let message = "Something went wrong!";
-      if (error.code === "auth/user-not-found") message = "User not found.";
-      else if (error.code === "auth/wrong-password") message = "Incorrect password.";
+      if (error.code === "auth/email-already-in-use") message = "Email is already registered.";
+      else if (error.code === "auth/invalid-email") message = "Invalid email format.";
+      else if (error.code === "auth/weak-password") message = "Password should be at least 6 characters.";
 
       Alert.alert("Error", message);
     } finally {
@@ -47,7 +64,15 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.card}>
           <Image source={Logo} style={styles.logo} />
-          <Text style={styles.title}>Login</Text>
+          <Text style={styles.title}>Sign Up</Text>
+
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            placeholder="Enter your name"
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+          />
 
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -68,19 +93,28 @@ export default function LoginScreen() {
             onChangeText={setPassword}
           />
 
+          <Text style={styles.label}>Confirm Password</Text>
+          <TextInput
+            placeholder="Confirm your password"
+            secureTextEntry
+            style={styles.input}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+
           <TouchableOpacity
             style={styles.button}
-            onPress={handleLogin}
+            onPress={handleSignUp}
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Creating Account..." : "Create Account"}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/signup")}>
+          <TouchableOpacity onPress={() => router.replace("/login")}>
             <Text style={styles.toggleText}>
-              Don't have an account? Sign Up
+              Already have an account? Login
             </Text>
           </TouchableOpacity>
         </View>
