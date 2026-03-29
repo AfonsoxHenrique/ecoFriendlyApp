@@ -6,30 +6,28 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-
         tabBarShowLabel: false,
-
         tabBarStyle: {
           backgroundColor: "#f2f2f2",
           borderTopWidth: 0,
-          height: 54,          
-          paddingTop: 8,       
-          paddingBottom: 8,     
-      },
-        tabBarActiveTintColor: "#6B8E5A", 
-        tabBarInactiveTintColor: "#9ca3af", 
+          height: 54,
+          paddingTop: 8,
+          paddingBottom: 8,
+        },
+        tabBarActiveTintColor: "#6B8E5A",
+        tabBarInactiveTintColor: "#9ca3af",
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
           tabBarIcon: ({ color, focused }) => (
-          <Ionicons
-            name={focused ? "home" : "home-outline"}
-            size={24}
-            color={color}
-          />
-        ),
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={24}
+              color={color}
+            />
+          ),
         }}
       />
 
@@ -37,12 +35,12 @@ export default function TabLayout() {
         name="favorites"
         options={{
           tabBarIcon: ({ color, focused }) => (
-          <Ionicons
-            name={focused ? "heart" : "heart-outline"}
-            size={24}
-            color={color}
-          />
-        ),
+            <Ionicons
+              name={focused ? "heart" : "heart-outline"}
+              size={24}
+              color={color}
+            />
+          ),
         }}
       />
 
@@ -50,12 +48,12 @@ export default function TabLayout() {
         name="cart"
         options={{
           tabBarIcon: ({ color, focused }) => (
-          <Ionicons
-            name={focused ? "bag-handle" : "bag-handle-outline"}
-            size={24}
-            color={color}
-          />
-        ),
+            <Ionicons
+              name={focused ? "bag-handle" : "bag-handle-outline"}
+              size={24}
+              color={color}
+            />
+          ),
         }}
       />
 
@@ -63,12 +61,19 @@ export default function TabLayout() {
         name="profile"
         options={{
           tabBarIcon: ({ color, focused }) => (
-          <Ionicons
-            name={focused ? "leaf" : "leaf-outline"}
-            size={24}
-            color={color}
-          />
-        ),
+            <Ionicons
+              name={focused ? "leaf" : "leaf-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="product/[id]"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

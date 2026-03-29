@@ -18,6 +18,7 @@ import { db } from "../../firebase";
 
 
 
+
 type Product = {
   id: string;
   name: string;
@@ -32,7 +33,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [userName, setUserName] = useState("User");
-  const categories = ["All", "Home Goods", "Healthcare", "Clothes"];
+  const categories = ["All", "Home Goods", "Healthcare", "Clothes", "Test"];
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => { 
@@ -172,12 +173,27 @@ export default function HomeScreen() {
           data={filteredProducts}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.productCard}>
-              <Image source={{ uri: item.image }} style={styles.productImage} />
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productPrice}>{item.price}</Text>
-            </View>
-          )}
+          <TouchableOpacity
+            style={styles.productCard}
+            activeOpacity={0.8}
+            onPress={() =>
+              router.push({
+                pathname: "/navigation/product/[id]",
+                params: { id: item.id },
+              })
+            }
+          >
+            <Image
+              source={{
+                uri: item.image || "https://via.placeholder.com/150",
+              }}
+              style={styles.productImage}
+            />
+
+            <Text style={styles.productName}>{item.name}</Text>
+            <Text style={styles.productPrice}>{item.price}</Text>
+          </TouchableOpacity>
+)}
           numColumns={2}
           columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 10 }}
           contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}
