@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { getAuth, signOut } from "firebase/auth";
 import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -131,15 +132,17 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
 
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={{ fontSize: 20 }}>←</Text>
-          </TouchableOpacity>
+          <View style={styles.headerRow}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Profile</Text>
+            <View style={{ width: 44 }} />
+          </View>
 
           <View style={styles.profileIcon}>
             <Text style={{ fontSize: 40 }}>👤</Text>
           </View>
-
-          <Text style={styles.title}>Profile</Text>
 
           {renderField("Username", username, "username")}
           {renderField("Email Address", email, "email")}
@@ -159,7 +162,21 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   scrollContainer: { padding: 20, alignItems: "center" },
-  backButton: { alignSelf: "flex-start", marginBottom: 10 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#e8e8e8",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   profileIcon: {
     width: 100,
@@ -171,7 +188,7 @@ const styles = StyleSheet.create({
     marginBottom: 15
   },
 
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: "bold" },
 
   fieldContainer: { width: "100%", marginBottom: 15 },
   fieldLabel: { fontSize: 14, fontWeight: "600", color: "#555", marginBottom: 5 },

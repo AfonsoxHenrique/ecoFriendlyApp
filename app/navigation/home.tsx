@@ -14,10 +14,9 @@ import {
   View
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { db } from "../../firebase";
-
-
-
+import { useFavorites } from "../context/FavoritesContext";
 
 type Product = {
   id: string;
@@ -35,6 +34,8 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState("User");
   const categories = ["All", "Home Goods", "Healthcare", "Clothes", "Test"];
   const [selectedCategory, setSelectedCategory] = useState("All");
+
+  const { favorites, toggleFavorite } = useFavorites();
 
   useEffect(() => { 
     const fetchUserName = async () => {
@@ -172,28 +173,43 @@ export default function HomeScreen() {
         <FlatList
           data={filteredProducts}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.productCard}
-            activeOpacity={0.8}
-            onPress={() =>
-              router.push({
-                pathname: "/navigation/product/[id]",
-                params: { id: item.id },
-              })
-            }
-          >
-            <Image
-              source={{
-                uri: item.image || "https://via.placeholder.com/150",
-              }}
-              style={styles.productImage}
-            />
+          renderItem={({ item }) => {
+            const isFav = favorites.includes(item.id);
+            return (
+              <TouchableOpacity
+                style={styles.productCard}
+                activeOpacity={0.8}
+                onPress={() =>
+                  router.push({
+                    pathname: "/navigation/product/[id]",
+                    params: { id: item.id },
+                  })
+                }
+              >
+                <View style={{ width: "100%", alignItems: "center" }}>
+                  <Image
+                    source={{
+                      uri: item.image || "https://via.placeholder.com/150",
+                    }}
+                    style={styles.productImage}
+                  />
+                  <TouchableOpacity
+                    style={{ position: "absolute", top: 2, right: 2, padding: 4 }}
+                    onPress={() => toggleFavorite(item.id)}
+                  >
+                    <Ionicons 
+                      name={isFav ? "heart" : "heart-outline"} 
+                      size={20} 
+                      color={isFav ? "red" : "gray"} 
+                    />
+                  </TouchableOpacity>
+                </View>
 
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productPrice}>{item.price}</Text>
-          </TouchableOpacity>
-)}
+                <Text style={styles.productName}>{item.name}</Text>
+                <Text style={styles.productPrice}>{item.price}</Text>
+              </TouchableOpacity>
+            );
+          }}
           numColumns={2}
           columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 10 }}
           contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 20 }}

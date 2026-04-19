@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../../firebase";
+import { useFavorites } from "../../context/FavoritesContext";
 
 type Product = {
   name?: string;
@@ -38,7 +39,9 @@ export default function ProductDetails() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(2);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { favorites, toggleFavorite } = useFavorites();
+
+  const isFavorite = favorites.includes(id as string);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -160,10 +163,10 @@ export default function ProductDetails() {
 
                 <TouchableOpacity
                   style={styles.circleButton}
-                  onPress={() => setIsFavorite(!isFavorite)}
+                  onPress={() => toggleFavorite(id as string)}
                 >
                   <Text style={[styles.favoriteIcon, isFavorite && styles.favoriteActive]}>
-                    ♡
+                    {isFavorite ? "♥" : "♡"}
                   </Text>
                 </TouchableOpacity>
               </View>
