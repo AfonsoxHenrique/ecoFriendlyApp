@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
   collection,
@@ -234,7 +234,7 @@ export default function CartScreen() {
             )}
           </View>
 
-          <TouchableOpacity style={styles.infoCard}>
+          <TouchableOpacity style={styles.infoCard} onPress={() => router.push("/navigation/address")}>
             <View style={styles.infoLeft}>
               <View style={styles.iconBadge}>
                 <Ionicons name="location-outline" size={16} color="#FF8C52" />
@@ -254,7 +254,7 @@ export default function CartScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.infoCard}>
+          <TouchableOpacity style={styles.infoCard} onPress={() => router.push("/navigation/payment")}>
             <View style={styles.infoLeft}>
               <View style={styles.cardLogo}>
                 <Text style={styles.cardLogoText}>VISA</Text>

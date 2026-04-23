@@ -85,6 +85,27 @@ export default function TabLayout() {
             href: null,
           }}
         />
+
+        <Tabs.Screen
+          name="address"
+          options={{
+            href: null,
+          }}
+        />
+
+        <Tabs.Screen
+          name="payment"
+          options={{
+            href: null,
+          }}
+        />
+
+        <Tabs.Screen
+          name="add-new-card"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     </FavoritesProvider>
   );
