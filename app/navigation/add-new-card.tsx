@@ -81,7 +81,7 @@ export default function AddNewCardScreen() {
       });
 
       Alert.alert("Card Added", "Your new card has been saved!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => router.push("/navigation/payment") },
       ]);
     } catch (e) {
       console.error(e);
@@ -95,7 +95,7 @@ export default function AddNewCardScreen() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/navigation/payment")}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
 

@@ -106,6 +106,20 @@ export default function TabLayout() {
             href: null,
           }}
         />
+
+        <Tabs.Screen
+          name="order-confirmed"
+          options={{
+            href: null,
+          }}
+        />
+
+        <Tabs.Screen
+          name="orders"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     </FavoritesProvider>
   );

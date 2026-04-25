@@ -149,6 +149,17 @@ export default function ProfileScreen() {
           {renderField("Phone Number", phone, "phone")}
           {renderField("Delivery Address", address, "address")}
 
+          <TouchableOpacity 
+            style={styles.menuRow} 
+            onPress={() => router.push("/navigation/orders")}
+          >
+            <View style={styles.menuLeft}>
+              <Ionicons name="receipt-outline" size={22} color="#555" />
+              <Text style={styles.menuText}>My Orders</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
@@ -211,6 +222,28 @@ const styles = StyleSheet.create({
 
   editIcon: { fontSize: 16, color: "green" },
   saveText: { fontSize: 16, color: "blue" },
+
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 16,
+    width: "100%",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  menuLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  menuText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
 
   signOutButton: {
     backgroundColor: "#6B8E5A",

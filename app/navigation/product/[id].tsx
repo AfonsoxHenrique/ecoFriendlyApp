@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
@@ -154,8 +155,8 @@ export default function ProductDetails() {
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.topSection}>
               <View style={styles.topButtonsRow}>
-                <TouchableOpacity style={styles.circleButton} onPress={() => router.back()}>
-                  <Text style={styles.circleButtonText}>←</Text>
+                <TouchableOpacity style={styles.circleButton} onPress={() => router.push("/navigation/home")}>
+                  <Ionicons name="arrow-back" size={20} color="#4A4A4A" />
                 </TouchableOpacity>
 
                 <TouchableOpacity

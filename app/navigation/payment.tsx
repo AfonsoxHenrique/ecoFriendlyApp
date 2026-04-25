@@ -139,7 +139,7 @@ export default function PaymentScreen() {
       });
 
       Alert.alert("Selected", "Payment card selected successfully!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => router.push("/navigation/cart") },
       ]);
     } catch (error) {
       console.error("Error selecting card:", error);
@@ -184,7 +184,7 @@ export default function PaymentScreen() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/navigation/cart")}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
 

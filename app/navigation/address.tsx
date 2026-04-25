@@ -135,7 +135,7 @@ export default function AddressScreen() {
       });
 
       Alert.alert("Selected", "Address selected successfully!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => router.push("/navigation/cart") },
       ]);
     } catch (error) {
       console.error("Error selecting address:", error);
@@ -149,7 +149,7 @@ export default function AddressScreen() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/navigation/cart")}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
 

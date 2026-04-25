@@ -2,12 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
+  serverTimestamp,
   updateDoc,
   where
 } from "firebase/firestore";
@@ -171,6 +173,48 @@ export default function CartScreen() {
   const shipping = cartItems.length > 0 ? 10 : 0;
   const total = subtotal + shipping;
 
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      Alert.alert("Cart is empty", "Please add items before checking out.");
+      return;
+    }
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user?.email) return;
+
+      // Save order to Firestore
+      await addDoc(collection(db, "orders"), {
+        email: user.email,
+        items: cartItems.map((item) => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        subtotal,
+        shipping,
+        total,
+        address,
+        status: "Processing",
+        createdAt: serverTimestamp(),
+      });
+
+      // Clear cart
+      const cartQuery = query(
+        collection(db, "cart"),
+        where("email", "==", user.email)
+      );
+      const cartSnap = await getDocs(cartQuery);
+      await Promise.all(cartSnap.docs.map((d) => deleteDoc(doc(db, "cart", d.id))));
+
+      setCartItems([]);
+      router.push("/navigation/order-confirmed");
+    } catch (err) {
+      console.error("Checkout error:", err);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaProvider>
@@ -184,8 +228,15 @@ export default function CartScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push("/navigation/home")}>
+            <Ionicons name="arrow-back" size={20} color="#333" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Cart</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
 
           <View style={styles.itemsWrapper}>
             {cartItems.length === 0 ? (
@@ -293,7 +344,7 @@ export default function CartScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.checkoutButton}>
+          <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
             <Text style={styles.checkoutText}>Check Out</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -315,13 +366,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 18,
+    marginTop: 6,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ECECEC",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: {
-    textAlign: "center",
     fontSize: 18,
     fontWeight: "700",
     color: "#444",
-    marginBottom: 18,
-    marginTop: 6,
   },
   itemsWrapper: {
     marginBottom: 14,

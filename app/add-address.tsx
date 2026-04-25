@@ -56,7 +56,7 @@ export default function AddAddressScreen() {
       });
 
       Alert.alert("Saved", "New address added successfully!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => router.push("/navigation/address") },
       ]);
     } catch (error) {
       console.error("Error saving address:", error);
@@ -70,7 +70,7 @@ export default function AddAddressScreen() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/navigation/address")}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
 
