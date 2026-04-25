@@ -1,192 +1,277 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { getAuth } from "firebase/auth";
-import { collection, getDocs, query, updateDoc, doc, where } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
-  ScrollView,
+  FlatList,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../firebase";
 
+type SavedAddress = {
+  id: string;
+  name: string;
+  country: string;
+  city: string;
+  phone: string;
+  address: string;
+};
+
 export default function AddressScreen() {
-  const [docId, setDocId] = useState("");
-  const [name, setName] = useState("");
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [savePrimary, setSavePrimary] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [userDocId, setUserDocId] = useState("");
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [activeAddressIndex, setActiveAddressIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (!user?.email) return;
+  useFocusEffect(
+    useCallback(() => {
+      const loadAddresses = async () => {
+        try {
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user?.email) return;
 
-        const q = query(collection(db, "users"), where("email", "==", user.email));
-        const snap = await getDocs(q);
+          const userQuery = query(
+            collection(db, "users"),
+            where("email", "==", user.email)
+          );
 
-        if (!snap.empty) {
-          const d = snap.docs[0];
-          const data = d.data();
-          setDocId(d.id);
-          setName(data.name || "");
-          setCountry(data.country || "");
-          setCity(data.city || "");
-          setPhone(data.phone || "");
-          setAddress(data.address || "");
-          setSavePrimary(data.isPrimaryAddress ?? true);
+          const userSnap = await getDocs(userQuery);
+
+          if (!userSnap.empty) {
+            setUserDocId(userSnap.docs[0].id);
+          }
+
+          const addressQuery = query(
+            collection(db, "addresses"),
+            where("email", "==", user.email)
+          );
+
+          const addressSnap = await getDocs(addressQuery);
+
+          const addresses: SavedAddress[] = addressSnap.docs.map((docSnap) => {
+            const data = docSnap.data() as any;
+
+            return {
+              id: docSnap.id,
+              name: data.recipientName || "User",
+              country: data.country || "",
+              city: data.city || "",
+              phone: data.phone || "",
+              address: data.address || "",
+            };
+          });
+
+          setSavedAddresses(addresses);
+          setActiveAddressIndex(0);
+        } catch (error) {
+          console.error("Error loading addresses:", error);
         }
-      } catch (e) {
-        console.error("Error loading address:", e);
-      }
-    };
-    fetchData();
-  }, []);
+      };
 
-  const handleSave = async () => {
-    if (!name.trim() || !address.trim()) {
-      Alert.alert("Required", "Please fill in your name and address.");
-      return;
-    }
+      loadAddresses();
+    }, [])
+  );
 
+  const handleDeleteAddress = (addressId: string) => {
+    Alert.alert("Delete address", "Do you want to delete this address?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, "addresses", addressId));
+
+            const updated = savedAddresses.filter(
+              (item) => item.id !== addressId
+            );
+
+            setSavedAddresses(updated);
+            setActiveAddressIndex(0);
+
+            Alert.alert("Deleted", "Address removed successfully.");
+          } catch (error) {
+            console.error("Error deleting address:", error);
+            Alert.alert("Error", "Could not delete address.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleUseAddress = async () => {
     try {
-      setSaving(true);
-      if (docId) {
-        await updateDoc(doc(db, "users", docId), {
-          name,
-          country,
-          city,
-          phone,
-          address,
-          isPrimaryAddress: savePrimary,
-        });
+      if (!userDocId || savedAddresses.length === 0) {
+        Alert.alert("No address", "Please add an address first.");
+        return;
       }
-      Alert.alert("Saved", "Address saved successfully!", [
+
+      const selectedAddress = savedAddresses[activeAddressIndex];
+
+      setLoading(true);
+
+      await updateDoc(doc(db, "users", userDocId), {
+        country: selectedAddress.country,
+        city: selectedAddress.city,
+        phone: selectedAddress.phone,
+        address: selectedAddress.address,
+        selectedAddressId: selectedAddress.id,
+        isPrimaryAddress: true,
+      });
+
+      Alert.alert("Selected", "Address selected successfully!", [
         { text: "OK", onPress: () => router.back() },
       ]);
-    } catch (e) {
-      Alert.alert("Error", "Could not save address.");
+    } catch (error) {
+      console.error("Error selecting address:", error);
+      Alert.alert("Error", "Could not select this address.");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
+
           <Text style={styles.headerTitle}>Address</Text>
+
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Name */}
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Eco lover"
-            placeholderTextColor="#C5C5C5"
-          />
+        <View style={styles.content}>
+          {savedAddresses.length > 0 ? (
+            <>
+              <FlatList
+                data={savedAddresses}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    onPress={() => setActiveAddressIndex(index)}
+                    style={[
+                      styles.addressCard,
+                      index === activeAddressIndex &&
+                      styles.activeAddressCard,
+                    ]}
+                  >
+                    <View style={styles.iconCircle}>
+                      <Ionicons
+                        name="location-outline"
+                        size={24}
+                        color="#6B8E5A"
+                      />
+                    </View>
 
-          {/* Country + City */}
-          <View style={styles.row}>
-            <View style={styles.halfCol}>
-              <Text style={styles.label}>Country</Text>
-              <TextInput
-                style={styles.input}
-                value={country}
-                onChangeText={setCountry}
-                placeholder="Australia"
-                placeholderTextColor="#C5C5C5"
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.addressName}>{item.name}</Text>
+                      <Text style={styles.addressText}>{item.address}</Text>
+                      <Text style={styles.addressSubText}>
+                        {item.city}
+                        {item.country ? `, ${item.country}` : ""}
+                      </Text>
+                      <Text style={styles.addressSubText}>{item.phone}</Text>
+                    </View>
+
+                    {index === activeAddressIndex && (
+                      <View style={styles.checkCircle}>
+                        <Ionicons
+                          name="checkmark"
+                          size={16}
+                          color="#fff"
+                        />
+                      </View>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => handleDeleteAddress(item.id)}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#B94A48"
+                      />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
               />
-            </View>
-            <View style={[styles.halfCol, { marginLeft: 12 }]}>
-              <Text style={styles.label}>City</Text>
-              <TextInput
-                style={styles.input}
-                value={city}
-                onChangeText={setCity}
-                placeholder="Melbourne"
-                placeholderTextColor="#C5C5C5"
+
+              <Text style={styles.selectedText}>
+                Selected address {activeAddressIndex + 1} of{" "}
+                {savedAddresses.length}
+              </Text>
+            </>
+          ) : (
+            <View style={styles.noAddressPlaceholder}>
+              <Ionicons
+                name="location-outline"
+                size={42}
+                color="#C5C5C5"
               />
+              <Text style={styles.noAddressText}>
+                No saved address yet
+              </Text>
             </View>
-          </View>
+          )}
 
-          {/* Phone */}
-          <Text style={styles.label}>Phone Number</Text>
-          <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="+61 1234 5678"
-            placeholderTextColor="#C5C5C5"
-            keyboardType="phone-pad"
-          />
-
-          {/* Address */}
-          <Text style={styles.label}>Address</Text>
-          <TextInput
-            style={[styles.input, styles.addressInput]}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="555 Swanston st, Melbourne"
-            placeholderTextColor="#C5C5C5"
-            multiline
-          />
-
-          {/* Save as primary toggle */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Save as primary address</Text>
-            <Switch
-              value={savePrimary}
-              onValueChange={setSavePrimary}
-              trackColor={{ false: "#E0E0E0", true: "#6DB56C" }}
-              thumbColor={"#fff"}
-            />
-          </View>
-
-          {/* Save Button */}
           <TouchableOpacity
-            style={[styles.saveBtn, saving && { opacity: 0.7 }]}
-            onPress={handleSave}
-            disabled={saving}
+            style={styles.addAddressBtn}
+            onPress={() => router.push("/add-address")}
           >
-            <Text style={styles.saveBtnText}>
-              {saving ? "Saving..." : "Save Address"}
+            <Ionicons
+              name="add-circle-outline"
+              size={18}
+              color="#6B8E5A"
+            />
+            <Text style={styles.addAddressText}>
+              Add new address
             </Text>
           </TouchableOpacity>
-        </ScrollView>
+
+          <TouchableOpacity
+            style={[
+              styles.selectAddressBtn,
+              (savedAddresses.length === 0 || loading) && {
+                opacity: 0.6,
+              },
+            ]}
+            onPress={handleUseAddress}
+            disabled={savedAddresses.length === 0 || loading}
+          >
+            <Text style={styles.selectAddressText}>
+              {loading ? "Selecting..." : "Use This Address"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F6F6F3",
-  },
+  container: { flex: 1, backgroundColor: "#F6F6F3" },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -197,6 +282,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#EFEFEF",
   },
+
   backBtn: {
     width: 40,
     height: 40,
@@ -205,67 +291,139 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
   headerTitle: {
     fontSize: 17,
     fontWeight: "700",
     color: "#2D2D2D",
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 40,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#3A3A3A",
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 14,
-    color: "#333",
-    borderWidth: 1,
-    borderColor: "#EBEBEB",
-  },
-  addressInput: {
-    minHeight: 52,
-    textAlignVertical: "top",
-  },
-  row: {
-    flexDirection: "row",
-  },
-  halfCol: {
+
+  content: {
     flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 28,
   },
-  toggleRow: {
+
+  addressCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 18,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 22,
-    marginBottom: 32,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#EFEFEF",
   },
-  toggleLabel: {
+
+  activeAddressCard: {
+    borderColor: "#6B8E5A",
+    borderWidth: 1.5,
+  },
+
+  iconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#EEF5EA",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  addressName: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#333",
+    marginBottom: 4,
+  },
+
+  addressText: {
     fontSize: 13,
     color: "#555",
-    fontWeight: "500",
+    marginBottom: 3,
   },
-  saveBtn: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#D0D0D0",
-    paddingVertical: 14,
+
+  addressSubText: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 2,
+  },
+
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#6B8E5A",
+    justifyContent: "center",
     alignItems: "center",
-    marginHorizontal: 40,
+    marginLeft: 10,
   },
-  saveBtnText: {
-    fontSize: 15,
+
+  deleteBtn: {
+    marginLeft: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#FFF1F1",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  selectedText: {
+    textAlign: "center",
+    color: "#777",
+    marginTop: 14,
+    marginBottom: 24,
+    fontSize: 13,
+  },
+
+  noAddressPlaceholder: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    height: 170,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: "#E8E8E8",
+    borderStyle: "dashed",
+  },
+
+  noAddressText: {
+    color: "#C5C5C5",
+    marginTop: 8,
+    fontSize: 13,
+  },
+
+  addAddressBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#8EA17A",
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+    gap: 8,
+  },
+
+  addAddressText: {
+    color: "#6B8E5A",
+    fontSize: 14,
     fontWeight: "700",
-    color: "#333",
+  },
+
+  selectAddressBtn: {
+    backgroundColor: "#6B8E5A",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+
+  selectAddressText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
   },
 });

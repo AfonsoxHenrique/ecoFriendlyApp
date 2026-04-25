@@ -32,9 +32,11 @@ export default function AddNewCardScreen() {
 
   const formatExp = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 4);
+
     if (digits.length >= 3) {
       return `${digits.slice(0, 2)}/${digits.slice(2)}`;
     }
+
     return digits;
   };
 
@@ -43,10 +45,12 @@ export default function AddNewCardScreen() {
       Alert.alert("Required", "Please enter the card owner name.");
       return;
     }
+
     if (cardNumber.replace(/\s/g, "").length < 16) {
       Alert.alert("Required", "Please enter a valid 16-digit card number.");
       return;
     }
+
     if (!exp.trim() || !cvv.trim()) {
       Alert.alert("Required", "Please fill in EXP and CVV.");
       return;
@@ -54,24 +58,33 @@ export default function AddNewCardScreen() {
 
     try {
       setSaving(true);
+
       const auth = getAuth();
       const user = auth.currentUser;
-      if (!user?.email) throw new Error("Not logged in");
 
-      await addDoc(collection(db, "savedCards"), {
+      if (!user?.email) {
+        Alert.alert("Error", "You must be logged in.");
+        return;
+      }
+
+      const last4 = cardNumber.replace(/\s/g, "").slice(-4);
+
+      await addDoc(collection(db, "payment_methods"), {
         email: user.email,
         owner: cardOwner,
         number: cardNumber,
         exp,
         cvv,
         type: paymentType,
+        last4,
         createdAt: new Date(),
       });
 
-      Alert.alert("Card Added", "Your new card has been saved to your wallet!", [
+      Alert.alert("Card Added", "Your new card has been saved!", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e) {
+      console.error(e);
       Alert.alert("Error", "Could not add card. Please try again.");
     } finally {
       setSaving(false);
@@ -81,12 +94,13 @@ export default function AddNewCardScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
+
           <Text style={styles.headerTitle}>Add New Card</Text>
+
           <View style={{ width: 40 }} />
         </View>
 
@@ -95,9 +109,7 @@ export default function AddNewCardScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
         >
-          {/* ── Payment Type Selector ── */}
           <View style={styles.typeRow}>
-            {/* Mastercard */}
             <TouchableOpacity
               style={[
                 styles.typeBtn,
@@ -106,12 +118,16 @@ export default function AddNewCardScreen() {
               onPress={() => setPaymentType("card")}
             >
               <View style={styles.mastercardIcon}>
-                <View style={[styles.mcCircle, { backgroundColor: "#EB001B", marginRight: -8 }]} />
+                <View
+                  style={[
+                    styles.mcCircle,
+                    { backgroundColor: "#EB001B", marginRight: -8 },
+                  ]}
+                />
                 <View style={[styles.mcCircle, { backgroundColor: "#F79E1B" }]} />
               </View>
             </TouchableOpacity>
 
-            {/* PayPal */}
             <TouchableOpacity
               style={[
                 styles.typeBtn,
@@ -125,7 +141,6 @@ export default function AddNewCardScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Bank */}
             <TouchableOpacity
               style={[
                 styles.typeBtn,
@@ -137,7 +152,6 @@ export default function AddNewCardScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Form ── */}
           <Text style={styles.label}>Card Owner</Text>
           <TextInput
             style={styles.input}
@@ -171,6 +185,7 @@ export default function AddNewCardScreen() {
                 maxLength={5}
               />
             </View>
+
             <View style={[styles.halfCol, { marginLeft: 14 }]}>
               <Text style={styles.label}>CVV</Text>
               <TextInput
@@ -186,7 +201,6 @@ export default function AddNewCardScreen() {
             </View>
           </View>
 
-          {/* ── Add Card Button ── */}
           <TouchableOpacity
             style={[styles.addBtn, saving && { opacity: 0.7 }]}
             onPress={handleAdd}
@@ -235,8 +249,6 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 48,
   },
-
-  // ── Payment type ──
   typeRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -271,8 +283,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
   },
-
-  // ── Form ──
   label: {
     fontSize: 13,
     fontWeight: "600",
@@ -296,8 +306,6 @@ const styles = StyleSheet.create({
   halfCol: {
     flex: 1,
   },
-
-  // ── Add Button ──
   addBtn: {
     backgroundColor: "#fff",
     borderRadius: 14,
