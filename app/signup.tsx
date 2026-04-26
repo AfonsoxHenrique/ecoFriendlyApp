@@ -1,13 +1,13 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Logo from "../assets/images/icon.png";
@@ -24,7 +24,7 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill all fields");
       return;
     }
@@ -37,21 +37,40 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const cleanEmail = email.trim().toLowerCase();
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password
+      );
 
       await setDoc(doc(db, "users", userCredential.user.uid), {
-        name,
-        email,
+        name: name.trim(),
+        email: cleanEmail,
+        phone: "",
+        address: "",
+        country: "",
+        city: "",
         created_at: new Date(),
       });
 
       Alert.alert("Success", "Account created successfully!");
       router.replace("/navigation/home");
     } catch (error: any) {
+      console.log("Signup error:", error);
+
       let message = "Something went wrong!";
-      if (error.code === "auth/email-already-in-use") message = "Email is already registered.";
-      else if (error.code === "auth/invalid-email") message = "Invalid email format.";
-      else if (error.code === "auth/weak-password") message = "Password should be at least 6 characters.";
+
+      if (error.code === "auth/email-already-in-use") {
+        message = "Email is already registered.";
+      } else if (error.code === "auth/invalid-email") {
+        message = "Invalid email format.";
+      } else if (error.code === "auth/weak-password") {
+        message = "Password should be at least 6 characters.";
+      } else if (error.code === "permission-denied") {
+        message = "Firestore rules are blocking the save.";
+      }
 
       Alert.alert("Error", message);
     } finally {
@@ -64,11 +83,13 @@ export default function SignUpScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.card}>
           <Image source={Logo} style={styles.logo} />
+
           <Text style={styles.title}>Sign Up</Text>
 
           <Text style={styles.label}>Name</Text>
           <TextInput
             placeholder="Enter your name"
+            placeholderTextColor="#999"
             style={styles.input}
             value={name}
             onChangeText={setName}
@@ -77,6 +98,7 @@ export default function SignUpScreen() {
           <Text style={styles.label}>Email</Text>
           <TextInput
             placeholder="Enter your email"
+            placeholderTextColor="#999"
             style={styles.input}
             value={email}
             onChangeText={setEmail}
@@ -87,6 +109,7 @@ export default function SignUpScreen() {
           <Text style={styles.label}>Password</Text>
           <TextInput
             placeholder="Enter your password"
+            placeholderTextColor="#999"
             secureTextEntry
             style={styles.input}
             value={password}
@@ -96,6 +119,7 @@ export default function SignUpScreen() {
           <Text style={styles.label}>Confirm Password</Text>
           <TextInput
             placeholder="Confirm your password"
+            placeholderTextColor="#999"
             secureTextEntry
             style={styles.input}
             value={confirmPassword}
@@ -103,7 +127,7 @@ export default function SignUpScreen() {
           />
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, loading && { opacity: 0.7 }]}
             onPress={handleSignUp}
             disabled={loading}
           >
@@ -130,6 +154,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f5f5f5",
   },
+
   card: {
     width: "85%",
     backgroundColor: "#fff",
@@ -137,45 +162,53 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     elevation: 5,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 5,
-    color: "#333",
-  },
-  input: {
-    backgroundColor: "#eee",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: "#6B8E5A",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  toggleText: {
-    marginTop: 15,
-    textAlign: "center",
-    color: "blue",
-  },
+
   logo: {
     width: 80,
     height: 80,
     resizeMode: "contain",
     alignSelf: "center",
     marginBottom: 15,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 5,
+    color: "#333",
+  },
+
+  input: {
+    backgroundColor: "#eee",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    color: "#333",
+  },
+
+  button: {
+    backgroundColor: "#6B8E5A",
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+
+  toggleText: {
+    marginTop: 15,
+    textAlign: "center",
+    color: "blue",
   },
 });

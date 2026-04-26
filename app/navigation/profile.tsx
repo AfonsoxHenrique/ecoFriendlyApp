@@ -1,7 +1,14 @@
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
-import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -10,7 +17,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../firebase";
@@ -32,21 +39,27 @@ export default function ProfileScreen() {
         const auth = getAuth();
         const user = auth.currentUser;
 
-        if (user?.email) {
-          setEmail(user.email);
+        if (!user?.email) return;
 
-          const q = query(collection(db, "users"), where("email", "==", user.email));
-          const querySnapshot = await getDocs(q);
+        setEmail(user.email);
 
-          if (!querySnapshot.empty) {
-            const docSnap = querySnapshot.docs[0];
-            const data = docSnap.data();
+        const q = query(
+          collection(db, "users"),
+          where("email", "==", user.email)
+        );
 
-            setDocId(docSnap.id);
-            setUsername(data.name || "User");
-            setPhone(data.phone || "");
-            setAddress(data.address || "");
-          }
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const docSnap = querySnapshot.docs[0];
+          const data = docSnap.data() as any;
+
+          setDocId(docSnap.id);
+          setUsername(data.name || "User");
+          setPhone(data.phone || "");
+          setAddress(data.address || "");
+        } else {
+          Alert.alert("Error", "User document not found in database.");
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -58,7 +71,12 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     try {
-      if (!docId) return;
+      if (!docId) {
+        Alert.alert("Error", "User document not found.");
+        return;
+      }
+
+      if (!editingField) return;
 
       const userRef = doc(db, "users", docId);
 
@@ -73,13 +91,20 @@ export default function ProfileScreen() {
       } else if (editingField === "address") {
         updatedData.address = tempValue;
         setAddress(tempValue);
+      } else {
+        Alert.alert("Error", "This field cannot be edited here.");
+        setEditingField(null);
+        return;
       }
 
       await updateDoc(userRef, updatedData);
 
       setEditingField(null);
+      setTempValue("");
+
       Alert.alert("Success", "Profile updated!");
     } catch (error) {
+      console.error("Error updating profile:", error);
       Alert.alert("Error", "Could not update profile.");
     }
   };
@@ -89,7 +114,11 @@ export default function ProfileScreen() {
     setTempValue(currentValue);
   };
 
-  const renderField = (label: string, value: string, fieldKey: string) => (
+  const renderEditableField = (
+    label: string,
+    value: string,
+    fieldKey: string
+  ) => (
     <View style={styles.fieldContainer}>
       <Text style={styles.fieldLabel}>{label}</Text>
 
@@ -99,9 +128,13 @@ export default function ProfileScreen() {
             value={tempValue}
             onChangeText={setTempValue}
             style={styles.input}
+            placeholder={label}
+            placeholderTextColor="#999"
           />
         ) : (
-          <Text style={styles.fieldValue}>{value}</Text>
+          <Text style={styles.fieldValue}>
+            {value || `No ${label.toLowerCase()} added`}
+          </Text>
         )}
 
         {editingField === fieldKey ? (
@@ -113,6 +146,16 @@ export default function ProfileScreen() {
             <Text style={styles.editIcon}>✎</Text>
           </TouchableOpacity>
         )}
+      </View>
+    </View>
+  );
+
+  const renderReadOnlyField = (label: string, value: string) => (
+    <View style={styles.fieldContainer}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+
+      <View style={styles.fieldRow}>
+        <Text style={styles.fieldValue}>{value}</Text>
       </View>
     </View>
   );
@@ -131,12 +174,16 @@ export default function ProfileScreen() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-
           <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
               <Ionicons name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
+
             <Text style={styles.title}>Profile</Text>
+
             <View style={{ width: 44 }} />
           </View>
 
@@ -144,26 +191,26 @@ export default function ProfileScreen() {
             <Text style={{ fontSize: 40 }}>👤</Text>
           </View>
 
-          {renderField("Username", username, "username")}
-          {renderField("Email Address", email, "email")}
-          {renderField("Phone Number", phone, "phone")}
-          {renderField("Delivery Address", address, "address")}
+          {renderEditableField("Username", username, "username")}
+          {renderReadOnlyField("Email Address", email)}
+          {renderEditableField("Phone Number", phone, "phone")}
+          {renderEditableField("Delivery Address", address, "address")}
 
-          <TouchableOpacity 
-            style={styles.menuRow} 
+          <TouchableOpacity
+            style={styles.menuRow}
             onPress={() => router.push("/navigation/orders")}
           >
             <View style={styles.menuLeft}>
               <Ionicons name="receipt-outline" size={22} color="#555" />
               <Text style={styles.menuText}>My Orders</Text>
             </View>
+
             <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
-
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -171,8 +218,16 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  scrollContainer: { padding: 20, alignItems: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+
+  scrollContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -180,6 +235,7 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 20,
   },
+
   backButton: {
     width: 44,
     height: 44,
@@ -196,13 +252,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#c8d6c2",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 15
+    marginBottom: 15,
   },
 
-  title: { fontSize: 22, fontWeight: "bold" },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
 
-  fieldContainer: { width: "100%", marginBottom: 15 },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: "#555", marginBottom: 5 },
+  fieldContainer: {
+    width: "100%",
+    marginBottom: 15,
+  },
+
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 5,
+  },
 
   fieldRow: {
     flexDirection: "row",
@@ -210,18 +278,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 10,
-    padding: 12
+    padding: 12,
+    minHeight: 48,
   },
 
-  fieldValue: { fontSize: 16 },
+  fieldValue: {
+    fontSize: 16,
+    flex: 1,
+    color: "#333",
+  },
 
   input: {
     flex: 1,
-    fontSize: 16
+    fontSize: 16,
+    color: "#333",
   },
 
-  editIcon: { fontSize: 16, color: "green" },
-  saveText: { fontSize: 16, color: "blue" },
+  editIcon: {
+    fontSize: 16,
+    color: "green",
+    marginLeft: 10,
+  },
+
+  saveText: {
+    fontSize: 16,
+    color: "blue",
+    marginLeft: 10,
+  },
 
   menuRow: {
     flexDirection: "row",
@@ -234,11 +317,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 5,
   },
+
   menuLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
+
   menuText: {
     fontSize: 16,
     fontWeight: "600",
@@ -250,8 +335,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 50,
-    marginTop: 30
+    marginTop: 30,
   },
 
-  signOutText: { color: "#fff", fontWeight: "bold", fontSize: 16 }
+  signOutText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });

@@ -291,8 +291,9 @@ const styles = StyleSheet.create({
   mainImage: {
     width: "100%",
     height: 270,
-    resizeMode: "cover",
     backgroundColor: "#EEE",
+    resizeMode: "contain",
+    alignSelf: "center",   
   },
   content: {
     backgroundColor: "#F5F5F0",
@@ -333,17 +334,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   thumbCard: {
-    width: 58,
-    height: 48,
-    borderRadius: 8,
+    width: 64,
+    height: 64,
+    borderRadius: 10,
     backgroundColor: "#E8E2D8",
+    justifyContent: "center", 
+    alignItems: "center",     
     overflow: "hidden",
-  },
-  thumbImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
+},
+thumbImage: {
+    width: "80%",            
+    height: "80%",
+    resizeMode: "contain",   
+},
   sectionTitle: {
     fontSize: 12,
     fontWeight: "800",
